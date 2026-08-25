@@ -64,7 +64,7 @@ final class FleetAnalytics
                 'harsh_acceleration' => (int) ($row->harsh_acceleration ?? 0),
                 'speeding' => (int) ($row->speeding ?? 0),
             ];
-        });
+        })->sortByDesc('distance_km')->values();
 
         $driverIds = Driver::query()->pluck('id')->all();
         $driverInsights = $this->driverInsights->forDrivers($driverIds);
@@ -75,9 +75,12 @@ final class FleetAnalytics
             $insight['driver'] = $driver;
 
             return $insight;
-        });
+        })->sortBy('score')->values();
 
         $fuelTrend = $this->dailyFuelTrend($from);
+        $averageSafety = $driverRows->isEmpty()
+            ? 0
+            : (int) round($driverRows->avg(fn (array $row) => $row['score']));
 
         return [
             'days' => $days,
@@ -86,6 +89,7 @@ final class FleetAnalytics
                 'fuel_consumed_l' => round($fuel, 1),
                 'l_per_100km' => $distance > 0 ? round(($fuel / $distance) * 100, 1) : 0,
                 'avg_speed' => round((float) $totals->avg_speed, 1),
+                'average_safety_score' => $averageSafety,
                 'harsh_braking' => (int) $totals->harsh_braking,
                 'harsh_acceleration' => (int) $totals->harsh_acceleration,
                 'speeding' => (int) $totals->speeding,

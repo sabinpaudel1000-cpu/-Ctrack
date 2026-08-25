@@ -67,16 +67,45 @@ final class DashboardMetrics
             ->limit(8)
             ->get();
 
+        $openAlerts = Alert::query()->open()->count();
+
+        $attentionVehicles = $vehicles
+            ->filter(function (Vehicle $vehicle) use ($openHighAlerts) {
+                return $vehicle->status === VehicleStatus::Maintenance
+                    || $vehicle->latestRisk?->level === RiskLevel::High
+                    || $openHighAlerts->contains($vehicle->id);
+            })
+            ->map(function (Vehicle $vehicle) use ($openHighAlerts) {
+                $reasons = [];
+                if ($vehicle->status === VehicleStatus::Maintenance) {
+                    $reasons[] = 'Workshop';
+                }
+                if ($vehicle->latestRisk?->level === RiskLevel::High) {
+                    $reasons[] = 'HIGH risk';
+                }
+                if ($openHighAlerts->contains($vehicle->id)) {
+                    $reasons[] = 'High-severity alert';
+                }
+
+                return [
+                    'vehicle' => $vehicle,
+                    'reasons' => $reasons,
+                ];
+            })
+            ->values();
+
         return [
             'total_vehicles' => $total,
             'active_vehicles' => $active,
             'inactive_vehicles' => $inactive,
             'vehicles_requiring_attention' => $requiringAttention,
+            'open_alerts' => $openAlerts,
             'average_fuel_l_per_100km' => $avgFuel,
             'average_driver_safety_score' => $avgSafety,
             'high_risk_vehicles' => $highRisk,
             'medium_risk_vehicles' => $mediumRisk,
             'low_risk_vehicles' => $lowRisk,
+            'attention_vehicles' => $attentionVehicles,
             'recent_alerts' => $recentAlerts,
             'charts' => $this->charts($vehicles, $insights),
         ];
