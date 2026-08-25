@@ -2,6 +2,7 @@
 
 namespace App\Services\Recommendations;
 
+use App\Enums\AlertSeverity;
 use App\Enums\AlertType;
 use App\Enums\RecommendationPriority;
 use App\Enums\RecommendationStatus;
@@ -51,11 +52,7 @@ final class RecommendationEngine
             ?? 'this asset';
 
         return match ($alert->type) {
-            AlertType::HighMaintenanceRisk => [
-                'title' => "Schedule a maintenance inspection for {$subject}",
-                'rationale' => $alert->message.' Book a workshop inspection before the next dispatch.',
-                'priority' => RecommendationPriority::High,
-            ],
+            AlertType::HighMaintenanceRisk => $this->maintenanceRecommendation($alert, $subject),
             AlertType::HighFuelConsumption => [
                 'title' => "Investigate high fuel consumption on {$subject}",
                 'rationale' => $alert->message.' Check tyre pressure, idling, routing and driver behaviour.',
@@ -88,5 +85,25 @@ final class RecommendationEngine
             ],
             default => null,
         };
+    }
+
+    /**
+     * @return array{title: string, rationale: string, priority: RecommendationPriority}
+     */
+    private function maintenanceRecommendation(Alert $alert, string $subject): array
+    {
+        if ($alert->severity === AlertSeverity::High) {
+            return [
+                'title' => "Schedule a maintenance inspection for {$subject}",
+                'rationale' => $alert->message.' Book a workshop inspection before the next dispatch.',
+                'priority' => RecommendationPriority::High,
+            ];
+        }
+
+        return [
+            'title' => "Plan a scheduled service for {$subject}",
+            'rationale' => $alert->message.' Fit this vehicle into the next service window so the score does not rise to HIGH.',
+            'priority' => RecommendationPriority::Medium,
+        ];
     }
 }

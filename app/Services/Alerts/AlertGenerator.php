@@ -46,6 +46,14 @@ final class AlertGenerator
                     AlertSeverity::High,
                     "{$vehicle->registration_number} scored {$vehicle->latestRisk->score}/100 (HIGH) on the weighted maintenance baseline.",
                 ));
+            } elseif ($vehicle->latestRisk?->level === RiskLevel::Medium) {
+                $created->push($this->make(
+                    $vehicle,
+                    $vehicle->driver_id,
+                    AlertType::HighMaintenanceRisk,
+                    AlertSeverity::Medium,
+                    "{$vehicle->registration_number} scored {$vehicle->latestRisk->score}/100 (MEDIUM) on the weighted maintenance baseline. Plan service before it reaches HIGH.",
+                ));
             }
 
             if ($stats['l_per_100km'] > 0 && $fleetFuel > 0 && $stats['l_per_100km'] > ($fleetFuel * 1.25)) {
@@ -99,7 +107,7 @@ final class AlertGenerator
             }
         }
 
-        foreach (Driver::query()->with('vehicle')->get() as $driver) {
+        foreach (Driver::query()->get() as $driver) {
             $insight = $driverInsights[$driver->id] ?? null;
             if (! $insight || $insight['score'] >= 60) {
                 continue;

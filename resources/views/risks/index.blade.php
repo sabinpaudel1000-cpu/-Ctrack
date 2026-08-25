@@ -13,7 +13,7 @@
                 <tr><th class="px-4 py-2">Vehicle</th><th class="px-4 py-2">Score</th><th class="px-4 py-2">Level</th><th class="px-4 py-2">Top factor</th><th></th></tr>
             </thead>
             <tbody>
-                @foreach ($vehicles as $vehicle)
+                @forelse ($vehicles as $vehicle)
                     @php $top = collect($vehicle->latestRisk->factors_json ?? [])->sortByDesc('contribution')->first(); @endphp
                     <tr class="border-t">
                         <td class="px-4 py-2">{{ $vehicle->displayName() }}</td>
@@ -22,7 +22,9 @@
                         <td class="px-4 py-2">{{ $top['label'] ?? '—' }} ({{ $top['contribution'] ?? 0 }})</td>
                         <td class="px-4 py-2"><a class="text-teal-700" href="{{ route('risks.show', $vehicle) }}">Factors</a></td>
                     </tr>
-                @endforeach
+                @empty
+                    <tr><td colspan="5" class="px-4 py-6 text-slate-500">No maintenance-risk snapshots yet. Run php artisan fleet:recalculate.</td></tr>
+                @endforelse
             </tbody>
         </table>
     </div>

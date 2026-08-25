@@ -12,10 +12,10 @@
                 <option value="{{ $status->value }}" @selected(request('status') === $status->value)>{{ $status->label() }}</option>
             @endforeach
         </select>
-        <button class="rounded-md bg-slate-900 text-white px-4">Filter</button>
+        <button class="rounded-md bg-slate-900 text-white px-4 py-2">Filter</button>
     </form>
     <div class="space-y-3">
-        @foreach ($recommendations as $recommendation)
+        @forelse ($recommendations as $recommendation)
             <article class="bg-white border rounded-xl p-4">
                 <div class="flex items-start justify-between gap-4">
                     <div>
@@ -39,7 +39,9 @@
                     </div>
                 </div>
             </article>
-        @endforeach
+        @empty
+            <p class="bg-white border rounded-xl p-6 text-sm text-slate-500">No recommendations yet. Alerts must be generated first (php artisan fleet:recalculate).</p>
+        @endforelse
     </div>
     <div class="mt-4">{{ $recommendations->links() }}</div>
 </x-layouts.app>

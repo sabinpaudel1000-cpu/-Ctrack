@@ -8,6 +8,7 @@ use App\Enums\AlertType;
 use App\Models\Alert;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class AlertController extends Controller
@@ -34,7 +35,7 @@ class AlertController extends Controller
     public function update(Request $request, Alert $alert): RedirectResponse
     {
         $data = $request->validate([
-            'status' => ['required', 'in:open,acknowledged,resolved'],
+            'status' => ['required', Rule::enum(AlertStatus::class)],
         ]);
 
         $alert->status = $data['status'];

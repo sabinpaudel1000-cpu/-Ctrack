@@ -7,6 +7,7 @@ use App\Enums\RecommendationStatus;
 use App\Models\Recommendation;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class RecommendationController extends Controller
@@ -31,7 +32,7 @@ class RecommendationController extends Controller
     public function update(Request $request, Recommendation $recommendation): RedirectResponse
     {
         $data = $request->validate([
-            'status' => ['required', 'in:pending,in_progress,completed,dismissed'],
+            'status' => ['required', Rule::enum(RecommendationStatus::class)],
         ]);
 
         $recommendation->update(['status' => $data['status']]);

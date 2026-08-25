@@ -18,7 +18,7 @@
                 <option value="{{ $status->value }}" @selected(request('status') === $status->value)>{{ $status->label() }}</option>
             @endforeach
         </select>
-        <button class="rounded-md bg-slate-900 text-white px-4">Filter</button>
+        <button class="rounded-md bg-slate-900 text-white px-4 py-2">Filter</button>
     </form>
     <div class="bg-white border rounded-xl overflow-x-auto">
         <table class="w-full text-sm">
@@ -33,7 +33,7 @@
                 </tr>
             </thead>
             <tbody>
-                @foreach ($alerts as $alert)
+                @forelse ($alerts as $alert)
                     <tr class="border-t">
                         <td class="px-4 py-2 whitespace-nowrap">{{ $alert->triggered_at->format('d M H:i') }}</td>
                         <td class="px-4 py-2">{{ $alert->type->label() }}</td>
@@ -51,7 +51,9 @@
                         </td>
                         <td class="px-4 py-2">{{ $alert->message }}</td>
                     </tr>
-                @endforeach
+                @empty
+                    <tr><td colspan="6" class="px-4 py-6 text-slate-500">No alerts match those filters.</td></tr>
+                @endforelse
             </tbody>
         </table>
     </div>
