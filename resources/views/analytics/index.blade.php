@@ -1,4 +1,5 @@
-<x-layouts.app title="Analytics" subtitle="30-day rollups from telematics_records">
+{{-- The subtitle uses the same day count the query used, so 7 days is not labelled as 30. --}}
+<x-layouts.app title="Analytics" :subtitle="$analytics['days'].'-day rollups from telematics_records'">
     <div class="grid md:grid-cols-4 gap-4 mb-6">
         <x-kpi label="Distance" :value="$analytics['totals']['distance_km'].' km'" />
         <x-kpi label="Fuel used" :value="$analytics['totals']['fuel_consumed_l'].' L'" />
@@ -7,7 +8,11 @@
     </div>
     <div class="bg-white border rounded-xl p-4 mb-6">
         <h2 class="font-semibold mb-3">Fuel trend</h2>
-        <canvas id="fuelTrend" height="140"></canvas>
+        @if ($analytics['fuel_trend']->isEmpty())
+            <p class="text-sm text-slate-500">No telematics in this period.</p>
+        @else
+            <canvas id="fuelTrend" height="140"></canvas>
+        @endif
     </div>
     <div class="bg-white border rounded-xl overflow-x-auto mb-6">
         <div class="px-4 py-3 font-semibold border-b">Vehicle performance</div>
@@ -16,7 +21,7 @@
                 <th class="px-4 py-2">Vehicle</th><th class="px-4 py-2">km</th><th class="px-4 py-2">L/100km</th><th class="px-4 py-2">Avg speed</th><th class="px-4 py-2">Events</th>
             </tr></thead>
             <tbody>
-            @foreach ($analytics['vehicles'] as $row)
+            @forelse ($analytics['vehicles'] as $row)
                 <tr class="border-t">
                     <td class="px-4 py-2">{{ $row['vehicle']->registration_number }}</td>
                     <td class="px-4 py-2">{{ $row['distance_km'] }}</td>
@@ -24,7 +29,9 @@
                     <td class="px-4 py-2">{{ $row['avg_speed'] }}</td>
                     <td class="px-4 py-2">B {{ $row['harsh_braking'] }} / A {{ $row['harsh_acceleration'] }} / S {{ $row['speeding'] }}</td>
                 </tr>
-            @endforeach
+            @empty
+                <tr><td colspan="5" class="px-4 py-6 text-slate-500">No vehicles to analyse yet.</td></tr>
+            @endforelse
             </tbody>
         </table>
     </div>
@@ -35,7 +42,7 @@
                 <th class="px-4 py-2">Driver</th><th class="px-4 py-2">Score</th><th class="px-4 py-2">Harsh brake</th><th class="px-4 py-2">Harsh accel</th><th class="px-4 py-2">Speeding</th>
             </tr></thead>
             <tbody>
-            @foreach ($analytics['drivers'] as $row)
+            @forelse ($analytics['drivers'] as $row)
                 <tr class="border-t">
                     <td class="px-4 py-2">{{ $row['driver']->fullName() }}</td>
                     <td class="px-4 py-2 font-semibold">{{ $row['score'] }}</td>
@@ -43,10 +50,13 @@
                     <td class="px-4 py-2">{{ $row['harsh_acceleration'] }}</td>
                     <td class="px-4 py-2">{{ $row['speeding'] }}</td>
                 </tr>
-            @endforeach
+            @empty
+                <tr><td colspan="5" class="px-4 py-6 text-slate-500">No drivers to analyse yet.</td></tr>
+            @endforelse
             </tbody>
         </table>
     </div>
+    @if ($analytics['fuel_trend']->isNotEmpty())
     @push('scripts')
     <script>
         const trend = @json($analytics['fuel_trend']);
@@ -57,4 +67,5 @@
         });
     </script>
     @endpush
+    @endif
 </x-layouts.app>

@@ -21,6 +21,7 @@ final class FleetAnalytics
     {
         $from = now()->subDays($days);
 
+        // toBase() so SUM(harsh_braking) stays a number. The model would turn it into true/false.
         $totals = TelematicsRecord::query()
             ->where('recorded_at', '>=', $from)
             ->selectRaw('COALESCE(SUM(distance_km), 0) as distance_km')
@@ -29,6 +30,7 @@ final class FleetAnalytics
             ->selectRaw('COALESCE(SUM(CASE WHEN harsh_braking = 1 THEN 1 ELSE 0 END), 0) as harsh_braking')
             ->selectRaw('COALESCE(SUM(CASE WHEN harsh_acceleration = 1 THEN 1 ELSE 0 END), 0) as harsh_acceleration')
             ->selectRaw('COALESCE(SUM(CASE WHEN speeding = 1 THEN 1 ELSE 0 END), 0) as speeding')
+            ->toBase()
             ->first();
 
         $distance = (float) $totals->distance_km;
@@ -44,6 +46,7 @@ final class FleetAnalytics
             ->selectRaw('COALESCE(SUM(CASE WHEN harsh_acceleration = 1 THEN 1 ELSE 0 END), 0) as harsh_acceleration')
             ->selectRaw('COALESCE(SUM(CASE WHEN speeding = 1 THEN 1 ELSE 0 END), 0) as speeding')
             ->groupBy('vehicle_id')
+            ->toBase()
             ->get()
             ->keyBy('vehicle_id');
 
@@ -67,11 +70,11 @@ final class FleetAnalytics
         });
 
         $driverIds = Driver::query()->pluck('id')->all();
-        $driverInsights = $this->driverInsights->forDrivers($driverIds);
+        $driverInsights = $this->driverInsights->forDrivers($driverIds, now(), $days);
         $drivers = Driver::query()->with('vehicle')->orderBy('last_name')->get();
 
-        $driverRows = $drivers->map(function (Driver $driver) use ($driverInsights) {
-            $insight = $driverInsights[$driver->id] ?? $this->driverInsights->forDriver($driver->id);
+        $driverRows = $drivers->map(function (Driver $driver) use ($driverInsights, $days) {
+            $insight = $driverInsights[$driver->id] ?? $this->driverInsights->forDriver($driver->id, now(), $days);
             $insight['driver'] = $driver;
 
             return $insight;

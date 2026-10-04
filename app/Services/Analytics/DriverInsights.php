@@ -9,7 +9,7 @@ use Illuminate\Support\Collection;
 final class DriverInsights
 {
     /**
-     * Safety score from the last 30 days of telematics.
+     * Safety score from the last $days of telematics (30 unless the analytics page asks for 7).
      * Starts at 100 and subtracts weighted event counts. Not a trained model.
      *
      * @return array{
@@ -21,18 +21,21 @@ final class DriverInsights
      *     speeding: int
      * }
      */
-    public function forDriver(int $driverId, ?CarbonInterface $now = null): array
+    public function forDriver(int $driverId, ?CarbonInterface $now = null, int $days = 30): array
     {
         $now ??= now();
 
+        // toBase() keeps the SUM as a number. On the model, harsh_braking is a true/false cast,
+        // so two events would become true and then count as 1.
         $row = TelematicsRecord::query()
             ->where('driver_id', $driverId)
-            ->where('recorded_at', '>=', $now->copy()->subDays(30))
+            ->where('recorded_at', '>=', $now->copy()->subDays($days))
             ->selectRaw('COALESCE(SUM(distance_km), 0) as distance_km')
             ->selectRaw('COALESCE(AVG(speed), 0) as avg_speed')
             ->selectRaw('COALESCE(SUM(CASE WHEN harsh_braking = 1 THEN 1 ELSE 0 END), 0) as harsh_braking')
             ->selectRaw('COALESCE(SUM(CASE WHEN harsh_acceleration = 1 THEN 1 ELSE 0 END), 0) as harsh_acceleration')
             ->selectRaw('COALESCE(SUM(CASE WHEN speeding = 1 THEN 1 ELSE 0 END), 0) as speeding')
+            ->toBase()
             ->first();
 
         return $this->summarise($row);
@@ -41,7 +44,7 @@ final class DriverInsights
     /**
      * @return Collection<int, array{driver_id: int, score: int, harsh_braking: int, harsh_acceleration: int, speeding: int, distance_km: float}>
      */
-    public function forDrivers(array $driverIds, ?CarbonInterface $now = null): Collection
+    public function forDrivers(array $driverIds, ?CarbonInterface $now = null, int $days = 30): Collection
     {
         $now ??= now();
 
@@ -51,7 +54,7 @@ final class DriverInsights
 
         $rows = TelematicsRecord::query()
             ->whereIn('driver_id', $driverIds)
-            ->where('recorded_at', '>=', $now->copy()->subDays(30))
+            ->where('recorded_at', '>=', $now->copy()->subDays($days))
             ->selectRaw('driver_id')
             ->selectRaw('COALESCE(SUM(distance_km), 0) as distance_km')
             ->selectRaw('COALESCE(AVG(speed), 0) as avg_speed')
@@ -59,6 +62,7 @@ final class DriverInsights
             ->selectRaw('COALESCE(SUM(CASE WHEN harsh_acceleration = 1 THEN 1 ELSE 0 END), 0) as harsh_acceleration')
             ->selectRaw('COALESCE(SUM(CASE WHEN speeding = 1 THEN 1 ELSE 0 END), 0) as speeding')
             ->groupBy('driver_id')
+            ->toBase()
             ->get()
             ->keyBy('driver_id');
 
