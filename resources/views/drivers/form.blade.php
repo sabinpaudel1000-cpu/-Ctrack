@@ -1,3 +1,4 @@
+{{-- One form for create and edit. The action switches to PUT when the driver already exists. --}}
 <x-layouts.app :title="$driver->exists ? 'Edit driver' : 'Add driver'">
     @if ($errors->any())
         <div class="mb-4 max-w-3xl rounded-md bg-rose-50 text-rose-800 px-4 py-3 text-sm">Please correct the highlighted fields.</div>
@@ -21,7 +22,8 @@
             <label class="text-sm font-medium">Status</label>
             <select name="status" class="{{ $inputClass('status') }}">
                 @foreach ($statuses as $status)
-                    <option value="{{ $status->value }}" @selected((string) $v('status') === $status->value)>{{ $status->label() }}</option>
+                    {{-- status is an enum on a saved driver, so compare the stored value, not the object. --}}
+                    <option value="{{ $status->value }}" @selected(old('status', $driver->status?->value) === $status->value)>{{ $status->label() }}</option>
                 @endforeach
             </select>
             @error('status') <p class="text-sm text-rose-600">{{ $message }}</p> @enderror

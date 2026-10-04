@@ -5,6 +5,9 @@ namespace App\Http\Requests;
 use App\Enums\DriverStatus;
 use Illuminate\Validation\Rule;
 
+/**
+ * Same checks as create, but unique fields ignore this driver's current values.
+ */
 class UpdateDriverRequest extends StoreDriverRequest
 {
     public function rules(): array

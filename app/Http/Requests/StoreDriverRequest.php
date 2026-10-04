@@ -7,6 +7,11 @@ use App\Models\Vehicle;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
+/**
+ * Checks a new driver before it is saved.
+ * Employee code and licence number are trimmed and stored in uppercase.
+ * vehicle_id is checked here; the controller writes it on the vehicle row.
+ */
 class StoreDriverRequest extends FormRequest
 {
     public function authorize(): bool

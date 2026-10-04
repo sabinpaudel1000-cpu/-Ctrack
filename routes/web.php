@@ -4,6 +4,7 @@ use App\Http\Controllers\AlertController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\HomeController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\MaintenanceRiskController;
 use App\Http\Controllers\RecommendationController;
@@ -11,11 +12,7 @@ use App\Http\Controllers\TelematicsController;
 use App\Http\Controllers\VehicleController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return auth()->check()
-        ? redirect()->route('dashboard')
-        : redirect()->route('login');
-});
+Route::get('/', HomeController::class)->name('home');
 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'create'])->name('login');
@@ -29,8 +26,8 @@ Route::post('/logout', [LoginController::class, 'destroy'])
 Route::middleware('auth')->group(function () {
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
     Route::resource('vehicles', VehicleController::class);
-    Route::get('/drivers', [DriverController::class, 'index'])->name('drivers.index');
-    Route::get('/drivers/{driver}', [DriverController::class, 'show'])->name('drivers.show');
+    // Same resource routes as vehicles: index, create, store, show, edit, update, destroy.
+    Route::resource('drivers', DriverController::class);
     Route::get('/telematics', [TelematicsController::class, 'index'])->name('telematics.index');
     Route::get('/analytics', AnalyticsController::class)->name('analytics.index');
     Route::get('/maintenance-risk', [MaintenanceRiskController::class, 'index'])->name('risks.index');
