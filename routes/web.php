@@ -7,6 +7,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\DriverController;
 use App\Http\Controllers\MaintenanceRiskController;
+use App\Http\Controllers\PredictionController;
 use App\Http\Controllers\RecommendationController;
 use App\Http\Controllers\TelematicsController;
 use App\Http\Controllers\VehicleController;
@@ -30,6 +31,7 @@ Route::middleware('auth')->group(function () {
     Route::resource('drivers', DriverController::class);
     Route::get('/telematics', [TelematicsController::class, 'index'])->name('telematics.index');
     Route::get('/analytics', AnalyticsController::class)->name('analytics.index');
+    Route::get('/predictions', PredictionController::class)->name('predictions.index');
     Route::get('/maintenance-risk', [MaintenanceRiskController::class, 'index'])->name('risks.index');
     Route::get('/maintenance-risk/{vehicle}', [MaintenanceRiskController::class, 'show'])->name('risks.show');
     Route::get('/alerts', [AlertController::class, 'index'])->name('alerts.index');

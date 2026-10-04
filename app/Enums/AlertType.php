@@ -11,6 +11,8 @@ enum AlertType: string
     case ExcessiveHarshAcceleration = 'excessive_harsh_acceleration';
     case HighEngineTemperature = 'high_engine_temperature';
     case Speeding = 'speeding';
+    case PredictedHighFuel = 'predicted_high_fuel';
+    case PredictedDriverSafety = 'predicted_driver_safety';
 
     public function label(): string
     {
@@ -22,11 +24,18 @@ enum AlertType: string
             self::ExcessiveHarshAcceleration => 'Excessive harsh acceleration',
             self::HighEngineTemperature => 'High engine temperature',
             self::Speeding => 'Speeding',
+            self::PredictedHighFuel => 'Predicted high fuel use',
+            self::PredictedDriverSafety => 'Predicted driver safety risk',
         };
     }
 
     public function isOperational(): bool
     {
-        return $this !== self::HighMaintenanceRisk;
+        // The maintenance alert is the score itself, so it is not counted again.
+        // Forecast alerts stay out of that score so the existing baseline does not change.
+        return match ($this) {
+            self::HighMaintenanceRisk, self::PredictedHighFuel, self::PredictedDriverSafety => false,
+            default => true,
+        };
     }
 }

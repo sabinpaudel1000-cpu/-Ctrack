@@ -11,12 +11,14 @@ use App\Models\Driver;
 use App\Models\TelematicsRecord;
 use App\Models\Vehicle;
 use App\Services\Analytics\DriverInsights;
+use App\Services\Predictions\PredictionReport;
 use Illuminate\Support\Collection;
 
 final class AlertGenerator
 {
     public function __construct(
         private readonly DriverInsights $driverInsights,
+        private readonly PredictionReport $predictions,
     ) {}
 
     /**
@@ -24,7 +26,13 @@ final class AlertGenerator
      */
     public function regenerate(): Collection
     {
-        Alert::query()->delete();
+        // Fuel and driver-risk alerts are updated below, so a second recalculate does not insert another row.
+        Alert::query()
+            ->whereNotIn('type', [
+                AlertType::PredictedHighFuel->value,
+                AlertType::PredictedDriverSafety->value,
+            ])
+            ->delete();
 
         $created = collect();
         $now = now();
@@ -124,7 +132,102 @@ final class AlertGenerator
             ]));
         }
 
+        $report = $this->predictions->build();
+        $keptFuelIds = [];
+        $keptDriverIds = [];
+
+        foreach ($report['flagged_vehicles'] as $row) {
+            $alert = $this->upsertOpenPrediction(
+                AlertType::PredictedHighFuel,
+                $row['vehicle']->id,
+                $row['vehicle']->driver_id,
+                AlertSeverity::Medium,
+                $row['message'],
+                $now,
+            );
+            $keptFuelIds[] = $alert->id;
+            $created->push($alert);
+        }
+
+        foreach ($report['drivers_at_risk'] as $row) {
+            $alert = $this->upsertOpenPrediction(
+                AlertType::PredictedDriverSafety,
+                $row['driver']->vehicle?->id,
+                $row['driver']->id,
+                $row['level'] === RiskLevel::High ? AlertSeverity::High : AlertSeverity::Medium,
+                $row['reason'],
+                $now,
+            );
+            $keptDriverIds[] = $alert->id;
+            $created->push($alert);
+        }
+
+        $this->resolveStalePredictions(AlertType::PredictedHighFuel, $keptFuelIds, $now);
+        $this->resolveStalePredictions(AlertType::PredictedDriverSafety, $keptDriverIds, $now);
+
         return $created;
+    }
+
+    /**
+     * Update the open forecast alert for this vehicle or driver. Insert one only when none is open.
+     */
+    private function upsertOpenPrediction(
+        AlertType $type,
+        ?int $vehicleId,
+        ?int $driverId,
+        AlertSeverity $severity,
+        string $message,
+        $now,
+    ): Alert {
+        $existing = Alert::query()
+            ->where('type', $type)
+            ->where('status', AlertStatus::Open)
+            ->when(
+                $type === AlertType::PredictedHighFuel,
+                fn ($query) => $query->where('vehicle_id', $vehicleId),
+                fn ($query) => $query->where('driver_id', $driverId),
+            )
+            ->first();
+
+        if ($existing) {
+            $existing->update([
+                'vehicle_id' => $vehicleId,
+                'driver_id' => $driverId,
+                'severity' => $severity,
+                'message' => $message,
+            ]);
+
+            return $existing;
+        }
+
+        return Alert::query()->create([
+            'vehicle_id' => $vehicleId,
+            'driver_id' => $driverId,
+            'type' => $type,
+            'severity' => $severity,
+            'message' => $message,
+            'status' => AlertStatus::Open,
+            'triggered_at' => $now,
+        ]);
+    }
+
+    /**
+     * @param  list<int>  $keepIds
+     */
+    private function resolveStalePredictions(AlertType $type, array $keepIds, $now): void
+    {
+        $query = Alert::query()
+            ->where('type', $type)
+            ->where('status', AlertStatus::Open);
+
+        if ($keepIds !== []) {
+            $query->whereNotIn('id', $keepIds);
+        }
+
+        $query->update([
+            'status' => AlertStatus::Resolved,
+            'resolved_at' => $now,
+        ]);
     }
 
     private function make(Vehicle $vehicle, ?int $driverId, AlertType $type, AlertSeverity $severity, string $message): Alert

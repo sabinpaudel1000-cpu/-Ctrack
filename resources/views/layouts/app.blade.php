@@ -35,6 +35,7 @@
                     ['drivers.index', 'Drivers', 'drivers.*'],
                     ['telematics.index', 'Telematics', 'telematics.*'],
                     ['analytics.index', 'Analytics', 'analytics.*'],
+                    ['predictions.index', 'Predictions', 'predictions.*'],
                     ['risks.index', 'Maintenance Risk', 'risks.*'],
                     ['alerts.index', 'Alerts', 'alerts.*'],
                     ['recommendations.index', 'Recommendations', 'recommendations.*'],

@@ -83,6 +83,18 @@ final class RecommendationEngine
                 'rationale' => $alert->message.' Confirm speed-limit compliance and consider a temporary speed advisory.',
                 'priority' => RecommendationPriority::High,
             ],
+            AlertType::PredictedHighFuel => [
+                'title' => "Review the 7-day fuel forecast for {$subject}",
+                'rationale' => $alert->message.' This is a statistical trend model, not a live fault. Check idling, tyre pressure and the route.',
+                'priority' => RecommendationPriority::Medium,
+            ],
+            AlertType::PredictedDriverSafety => [
+                'title' => 'Review the predicted driver safety risk',
+                'rationale' => $alert->message.' This statistical trend uses the safety score and whether harsh events are rising.',
+                'priority' => $alert->severity === AlertSeverity::High
+                    ? RecommendationPriority::High
+                    : RecommendationPriority::Medium,
+            ],
             default => null,
         };
     }
