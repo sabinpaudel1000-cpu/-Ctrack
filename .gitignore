@@ -23,3 +23,5 @@ yarn-error.log
 /.zed
 /database/database.sqlite
 .DS_Store
+/docs
+/ICT308_Assessment1_Final.pdf

@@ -40,8 +40,9 @@ class DemoFleetSeeder extends Seeder
             'email_verified_at' => now(),
         ]);
 
-        $now = Carbon::parse('2026-08-24 09:00:00');
-        Carbon::setTestNow($now);
+        // The analytics and prediction screens only read the last 7 or 30 days.
+        // A fixed August date leaves those screens empty later in the semester.
+        $now = now();
 
         foreach ($this->fleet() as $index => $row) {
             $driver = Driver::query()->create($row['driver']);
@@ -62,8 +63,6 @@ class DemoFleetSeeder extends Seeder
 
             $this->seedTelematics($vehicle, $driver, $row['profile'], $now);
         }
-
-        Carbon::setTestNow();
 
         app(FleetInsightRecalculator::class)->recalculate();
     }
